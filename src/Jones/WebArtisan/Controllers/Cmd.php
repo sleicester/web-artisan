@@ -45,6 +45,8 @@ class Cmd extends \BaseController
 
 	public function run()
 	{
+		$this->checkIpAddress();
+
 		if (!$this->checkUser())
 		{
 			echo '<p>'.Lang::get('web-artisan::webartisan.terminal.needlogin').'</p>';
@@ -113,23 +115,43 @@ class Cmd extends \BaseController
 		$command->run($input, new Output());
 	}
 
-	private function checkUser() {
-		if (!in_array(@$_SERVER['REMOTE_ADDR'], Config::get('web-artisan::ips')))
+	private function checkUser()
+	{	
+		$password = Config::get('web-artisan::password');
+
+		if ($password == $this->password)
 		{
-			throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+			return true;
 		}
 		else
-		{		
-			$password = Config::get('web-artisan::password');
-
-			if ($password == $this->password)
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+		{
+			return false;
 		}
 	}
+
+	private function checkIpAddress()
+	{
+		$ips = Config::get('web-artisan::ips');
+		$client_ip = $_SERVER['REMOTE_ADDR'];
+
+		foreach( $ips as $ip ) {
+			# First check if ip is a range and matches
+			if( strlen($ip)-strrchr($ip,'/') == 3 ) {
+			    list($subnet, $mask) = explode('/', $ip);
+
+			    if ((ip2long($clent_ip) & ~((1 << (32 - $mask)) - 1) ) == ip2long($subnet))
+			    { 
+			        return true;
+			    }
+
+			# Otherwise simple IP match check
+			} elseif ( $client_ip == $ip ) {
+				return true;
+			}
+		}
+
+		# We haven't found a valid IP so throw an 404
+		throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+	}
+
 }
