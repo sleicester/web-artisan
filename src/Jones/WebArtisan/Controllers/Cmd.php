@@ -133,13 +133,12 @@ class Cmd extends \BaseController
 	{
 		$ips = Config::get('web-artisan::ips');
 		$client_ip = $_SERVER['REMOTE_ADDR'];
-
 		foreach( $ips as $ip ) {
 			# First check if ip is a range and matches
-			if( strlen($ip)-strrchr($ip,'/') == 3 ) {
+			if( strrchr($ip,'/') && strlen(strrchr($ip,'/')) == 3 ) {
 			    list($subnet, $mask) = explode('/', $ip);
 
-			    if ((ip2long($clent_ip) & ~((1 << (32 - $mask)) - 1) ) == ip2long($subnet))
+			    if ((ip2long($client_ip) & ~((1 << (32 - $mask)) - 1) ) == ip2long($subnet))
 			    { 
 			        return true;
 			    }
